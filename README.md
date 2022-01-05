@@ -1,6 +1,6 @@
 # Drug Verification Management System
 
-Production-grade backend platform for pharmaceutical supply chain integrity using Java 21 with Spring Boot 3.2+.
+Production-grade backend platform for pharmaceutical supply chain integrity using Java 17 with Spring Boot 3.2+.
 
 ## Overview
 
@@ -18,7 +18,7 @@ This system provides comprehensive drug verification and tracking capabilities f
 
 ## Technology Stack
 
-- Java 21 LTS
+- Java 17 LTS
 - Spring Boot 3.2.2
 - PostgreSQL 16+ with TimescaleDB extension
 - Redis 7+ for caching
@@ -28,7 +28,7 @@ This system provides comprehensive drug verification and tracking capabilities f
 
 ## Prerequisites
 
-- JDK 21 or later
+- JDK 17 or later
 - Docker and Docker Compose
 - Maven 3.9+
 
