@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: dvms-postgres
+    environment:
+      POSTGRES_DB: drugverification
+      POSTGRES_USER: dvms
+      POSTGRES_PASSWORD: dvms_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dvms -d drugverification"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: dvms-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  softhsm:
+    image: opendnssec/softhsmv2:latest
+    container_name: dvms-softhsm
+    volumes:
+      - hsm_tokens:/var/lib/softhsm/tokens
+    environment:
+      SOFTHSM2_CONF: /etc/softhsm2.conf
+    command: tail -f /dev/null
+
+volumes:
+  postgres_data:
+  redis_data:
+  hsm_tokens:
