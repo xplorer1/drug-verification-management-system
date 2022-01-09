@@ -98,7 +98,7 @@ logging:
 
 application:
   jwt:
-    secret: changeme-generate-proper-rsa-keypair-for-production
+    secret: change-me-to-secure-256-bit-secret-key-in-production-environment
     expiration: 3600000
     refresh-expiration: 604800000
   security:
