@@ -40,5 +40,13 @@ public class ApplicationProperties {
         private int cacheTtlSeconds;
         private double maxDistanceMeters;
         private int minTimeBetweenScansSeconds;
+
+        public double getMaxDistanceKm() {
+            return maxDistanceMeters / 1000.0;
+        }
+
+        public int getMinTimeBetweenScansMinutes() {
+            return minTimeBetweenScansSeconds / 60;
+        }
     }
 }
