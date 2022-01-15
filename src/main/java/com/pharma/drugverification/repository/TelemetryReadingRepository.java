@@ -11,18 +11,24 @@ import java.util.List;
 @Repository
 public interface TelemetryReadingRepository extends JpaRepository<TelemetryReading, Long> {
 
-    List<TelemetryReading> findByBatchIdOrderByTimestampDesc(Long batchId);
+        List<TelemetryReading> findByBatchIdOrderByTimestampDesc(Long batchId);
 
-    @Query("SELECT tr FROM TelemetryReading tr WHERE tr.batchId = :batchId " +
-            "AND tr.timestamp BETWEEN :startTime AND :endTime ORDER BY tr.timestamp")
-    List<TelemetryReading> findByBatchIdAndTimeRange(
-            Long batchId,
-            LocalDateTime startTime,
-            LocalDateTime endTime);
+        @Query("SELECT tr FROM TelemetryReading tr WHERE tr.batchId = :batchId " +
+                        "AND tr.timestamp BETWEEN :startTime AND :endTime ORDER BY tr.timestamp")
+        List<TelemetryReading> findByBatchIdAndTimeRange(
+                        Long batchId,
+                        LocalDateTime startTime,
+                        LocalDateTime endTime);
 
-    @Query("SELECT tr FROM TelemetryReading tr WHERE tr.batchId = :batchId " +
-            "ORDER BY tr.timestamp DESC LIMIT 1")
-    TelemetryReading findLatestByBatchId(Long batchId);
+        @Query("SELECT tr FROM TelemetryReading tr WHERE tr.batchId = :batchId " +
+                        "ORDER BY tr.timestamp DESC LIMIT 1")
+        TelemetryReading findLatestByBatchId(Long batchId);
 
-    List<TelemetryReading> findByDeviceId(String deviceId);
+        List<TelemetryReading> findByDeviceId(String deviceId);
+
+        org.springframework.data.domain.Page<TelemetryReading> findByBatchId(Long batchId,
+                        org.springframework.data.domain.Pageable pageable);
+
+        org.springframework.data.domain.Page<TelemetryReading> findByDeviceId(String deviceId,
+                        org.springframework.data.domain.Pageable pageable);
 }
