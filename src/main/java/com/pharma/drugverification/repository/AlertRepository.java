@@ -23,4 +23,11 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     long countByAcknowledgedFalseAndSeverity(Alert.AlertSeverity severity);
 
     long countByAlertTypeAndCreatedAtAfter(Alert.AlertType alertType, LocalDateTime since);
+
+    Page<Alert> findByRelatedEntityTypeAndRelatedEntityId(String relatedEntityType, Long relatedEntityId,
+            Pageable pageable);
+
+    List<Alert> findByAcknowledged(Boolean acknowledged);
+
+    List<Alert> findByCreatedAtAfter(LocalDateTime createdAt);
 }
