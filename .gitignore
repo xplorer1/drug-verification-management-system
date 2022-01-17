@@ -57,3 +57,5 @@ application-dev.yml
 # HSM
 *.db
 softhsm/
+
+test_results.txt
