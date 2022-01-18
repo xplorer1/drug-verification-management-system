@@ -59,3 +59,4 @@ application-dev.yml
 softhsm/
 
 test_results.txt
+*.txt
