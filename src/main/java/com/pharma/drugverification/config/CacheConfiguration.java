@@ -13,24 +13,27 @@ import java.time.Duration;
 @Configuration
 public class CacheConfiguration implements CachingConfigurer {
 
-    @Bean
-    public RedisCacheConfiguration cacheConfiguration() {
-        return RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1))
-                .disableCachingNullValues()
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                                new GenericJackson2JsonRedisSerializer()));
-    }
+        @Bean
+        public RedisCacheConfiguration redisCacheConfiguration() {
+                return RedisCacheConfiguration.defaultCacheConfig()
+                                .entryTtl(Duration.ofHours(1))
+                                .disableCachingNullValues()
+                                .serializeValuesWith(
+                                                RedisSerializationContext.SerializationPair.fromSerializer(
+                                                                new GenericJackson2JsonRedisSerializer()));
+        }
 
-    @Bean
-    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
-        return builder -> builder
-                .withCacheConfiguration("drugDetails",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)))
-                .withCacheConfiguration("verificationResults",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(5)))
-                .withCacheConfiguration("batchDetails",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)));
-    }
+        @Bean
+        public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
+                return builder -> builder
+                                .withCacheConfiguration("drugDetails",
+                                                RedisCacheConfiguration.defaultCacheConfig()
+                                                                .entryTtl(Duration.ofHours(1)))
+                                .withCacheConfiguration("verificationResults",
+                                                RedisCacheConfiguration.defaultCacheConfig()
+                                                                .entryTtl(Duration.ofMinutes(5)))
+                                .withCacheConfiguration("batchDetails",
+                                                RedisCacheConfiguration.defaultCacheConfig()
+                                                                .entryTtl(Duration.ofHours(1)));
+        }
 }
