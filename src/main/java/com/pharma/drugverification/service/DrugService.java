@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pharma.drugverification.exception.BadRequestException;
+import com.pharma.drugverification.exception.ResourceNotFoundException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -34,7 +36,7 @@ public class DrugService {
     @CacheEvict(value = "drugs", allEntries = true)
     public DrugResponse registerDrug(DrugRegistrationRequest request, Long userId) {
         if (drugRepository.existsByNdc(request.getNdc())) {
-            throw new RuntimeException("Drug with NDC " + request.getNdc() + " already exists");
+            throw new BadRequestException("Drug with NDC " + request.getNdc() + " already exists");
         }
 
         String cryptoIdentifier = generateCryptoIdentifier(request.getNdc(), request.getName());
@@ -65,10 +67,10 @@ public class DrugService {
     @CacheEvict(value = "drugs", allEntries = true)
     public DrugResponse approveDrug(Long drugId, Long regulatorId) {
         Drug drug = drugRepository.findById(drugId)
-                .orElseThrow(() -> new RuntimeException("Drug not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Drug not found"));
 
         if (drug.getStatus() != Drug.DrugStatus.PENDING) {
-            throw new RuntimeException("Drug is not in PENDING status");
+            throw new BadRequestException("Drug is not in PENDING status");
         }
 
         Drug.DrugStatus oldStatus = drug.getStatus();
@@ -96,10 +98,10 @@ public class DrugService {
     @CacheEvict(value = "drugs", allEntries = true)
     public DrugResponse rejectDrug(Long drugId, String reason, Long regulatorId) {
         Drug drug = drugRepository.findById(drugId)
-                .orElseThrow(() -> new RuntimeException("Drug not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Drug not found"));
 
         if (drug.getStatus() != Drug.DrugStatus.PENDING) {
-            throw new RuntimeException("Drug is not in PENDING status");
+            throw new BadRequestException("Drug is not in PENDING status");
         }
 
         Drug.DrugStatus oldStatus = drug.getStatus();
@@ -126,14 +128,14 @@ public class DrugService {
     @Cacheable(value = "drugs", key = "#id")
     public DrugResponse getDrugById(Long id) {
         Drug drug = drugRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Drug not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Drug not found"));
         return DrugResponse.from(drug);
     }
 
     @Transactional(readOnly = true)
     public DrugResponse getDrugByNdc(String ndc) {
         Drug drug = drugRepository.findByNdc(ndc)
-                .orElseThrow(() -> new RuntimeException("Drug not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Drug not found"));
         return DrugResponse.from(drug);
     }
 

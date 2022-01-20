@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pharma.drugverification.exception.BadRequestException;
+import com.pharma.drugverification.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,11 +35,11 @@ public class RecallService {
     @Transactional
     public RecallResponse initiateRecall(RecallRequest request, Long regulatorId) {
         Batch batch = batchRepository.findById(request.getBatchId())
-                .orElseThrow(() -> new RuntimeException("Batch not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
 
         // Check if there's already an active recall for this batch
         if (recallRepository.existsByBatchIdAndStatus(request.getBatchId(), Recall.RecallStatus.ACTIVE)) {
-            throw new RuntimeException("There is already an active recall for this batch");
+            throw new BadRequestException("There is already an active recall for this batch");
         }
 
         // Count affected units
@@ -84,17 +86,17 @@ public class RecallService {
     @Transactional
     public RecallResponse recordRecovery(Long recallId, Long unitId, Long userId) {
         Recall recall = recallRepository.findById(recallId)
-                .orElseThrow(() -> new RuntimeException("Recall not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Recall not found"));
 
         if (recall.getStatus() != Recall.RecallStatus.ACTIVE) {
-            throw new RuntimeException("Recall is not active");
+            throw new BadRequestException("Recall is not active");
         }
 
         SerializedUnit unit = serializedUnitRepository.findById(unitId)
-                .orElseThrow(() -> new RuntimeException("Unit not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Unit not found"));
 
         if (unit.getStatus() != SerializedUnit.UnitStatus.QUARANTINED) {
-            throw new RuntimeException("Unit is not quarantined");
+            throw new BadRequestException("Unit is not quarantined");
         }
 
         // Mark unit as destroyed
@@ -117,10 +119,10 @@ public class RecallService {
     @Transactional
     public RecallResponse completeRecall(Long recallId, Long userId) {
         Recall recall = recallRepository.findById(recallId)
-                .orElseThrow(() -> new RuntimeException("Recall not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Recall not found"));
 
         if (recall.getStatus() != Recall.RecallStatus.ACTIVE) {
-            throw new RuntimeException("Recall is not active");
+            throw new BadRequestException("Recall is not active");
         }
 
         recall.setStatus(Recall.RecallStatus.COMPLETED);
@@ -141,7 +143,7 @@ public class RecallService {
     @Transactional(readOnly = true)
     public RecallResponse getRecall(Long id) {
         Recall recall = recallRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Recall not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Recall not found"));
         return RecallResponse.from(recall);
     }
 

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pharma.drugverification.exception.BadRequestException;
+import com.pharma.drugverification.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,16 +33,16 @@ public class AggregationService {
         List<SerializedUnit> childUnits = serializedUnitRepository.findAllById(request.getChildUnitIds());
 
         if (childUnits.isEmpty()) {
-            throw new RuntimeException("No child units found");
+            throw new BadRequestException("No child units found");
         }
 
         if (childUnits.size() != request.getChildUnitIds().size()) {
-            throw new RuntimeException("Some child units not found");
+            throw new BadRequestException("Some child units not found");
         }
 
         for (SerializedUnit unit : childUnits) {
             if (unit.getStatus() != SerializedUnit.UnitStatus.ACTIVE) {
-                throw new RuntimeException("Unit " + unit.getSerialNumber() + " is not in ACTIVE status");
+                throw new BadRequestException("Unit " + unit.getSerialNumber() + " is not in ACTIVE status");
             }
         }
 
@@ -77,10 +79,10 @@ public class AggregationService {
     @Transactional
     public AggregationResponse disaggregate(Long aggregationId, Long userId) {
         Aggregation aggregation = aggregationRepository.findById(aggregationId)
-                .orElseThrow(() -> new RuntimeException("Aggregation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Aggregation not found"));
 
         if (!aggregation.getActive()) {
-            throw new RuntimeException("Aggregation is already disaggregated");
+            throw new BadRequestException("Aggregation is already disaggregated");
         }
 
         aggregation.setActive(false);
@@ -107,7 +109,7 @@ public class AggregationService {
     @Transactional(readOnly = true)
     public AggregationResponse getAggregation(Long id) {
         Aggregation aggregation = aggregationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Aggregation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Aggregation not found"));
         return AggregationResponse.from(aggregation);
     }
 

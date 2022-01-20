@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pharma.drugverification.exception.BadRequestException;
+import com.pharma.drugverification.exception.ResourceNotFoundException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,18 +38,18 @@ public class BatchService {
     @CacheEvict(value = "batches", allEntries = true)
     public BatchResponse createBatch(BatchCreationRequest request, Long userId) {
         if (batchRepository.existsByBatchNumber(request.getBatchNumber())) {
-            throw new RuntimeException("Batch with number " + request.getBatchNumber() + " already exists");
+            throw new BadRequestException("Batch with number " + request.getBatchNumber() + " already exists");
         }
 
         Drug drug = drugRepository.findById(request.getDrugId())
-                .orElseThrow(() -> new RuntimeException("Drug not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Drug not found"));
 
         if (drug.getStatus() != Drug.DrugStatus.APPROVED) {
-            throw new RuntimeException("Cannot create batch for unapproved drug");
+            throw new BadRequestException("Cannot create batch for unapproved drug");
         }
 
         if (request.getExpirationDate().isBefore(request.getManufacturingDate())) {
-            throw new RuntimeException("Expiration date must be after manufacturing date");
+            throw new BadRequestException("Expiration date must be after manufacturing date");
         }
 
         Batch batch = new Batch();
@@ -72,7 +74,7 @@ public class BatchService {
     @CacheEvict(value = "batches", allEntries = true)
     public BatchResponse updateBatch(Long batchId, BatchUpdateRequest request, Long userId) {
         Batch batch = batchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Batch not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
 
         batch.setLocation(request.getLocation());
         batch.setNotes(request.getNotes());
@@ -90,7 +92,7 @@ public class BatchService {
     @CacheEvict(value = "batches", allEntries = true)
     public BatchResponse updateBatchStatus(Long batchId, Batch.BatchStatus newStatus, String reason, Long userId) {
         Batch batch = batchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Batch not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
 
         Batch.BatchStatus oldStatus = batch.getStatus();
         batch.setStatus(newStatus);
@@ -115,14 +117,14 @@ public class BatchService {
     @Cacheable(value = "batches", key = "#id")
     public BatchResponse getBatchById(Long id) {
         Batch batch = batchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Batch not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
         return BatchResponse.from(batch);
     }
 
     @Transactional(readOnly = true)
     public BatchResponse getBatchByNumber(String batchNumber) {
         Batch batch = batchRepository.findByBatchNumber(batchNumber)
-                .orElseThrow(() -> new RuntimeException("Batch not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
         return BatchResponse.from(batch);
     }
 

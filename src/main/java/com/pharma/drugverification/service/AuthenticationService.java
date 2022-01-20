@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pharma.drugverification.exception.BadRequestException;
+import com.pharma.drugverification.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
@@ -34,19 +36,19 @@ public class AuthenticationService {
     @Transactional
     public AuthResponse authenticate(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new BadRequestException("Invalid credentials"));
 
         if (!user.getActive()) {
-            throw new RuntimeException("Account is disabled");
+            throw new BadRequestException("Account is disabled");
         }
 
         if (isAccountLocked(user)) {
-            throw new RuntimeException("Account is locked. Please try again later.");
+            throw new BadRequestException("Account is locked. Please try again later.");
         }
 
         if (!passwordHashingService.verifyPassword(request.getPassword(), user.getPasswordHash())) {
             handleFailedLogin(user);
-            throw new RuntimeException("Invalid credentials");
+            throw new BadRequestException("Invalid credentials");
         }
 
         resetFailedAttempts(user);
@@ -74,17 +76,17 @@ public class AuthenticationService {
     @Transactional
     public AuthResponse refreshToken(String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
+            throw new BadRequestException("Invalid refresh token");
         }
 
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!user.getActive()) {
-            throw new RuntimeException("Account is disabled");
+            throw new BadRequestException("Account is disabled");
         }
 
         String newAccessToken = jwtTokenProvider.generateToken(

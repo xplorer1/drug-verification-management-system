@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pharma.drugverification.exception.BadRequestException;
+import com.pharma.drugverification.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -48,10 +50,10 @@ public class AlertService {
     @Transactional
     public AlertResponse acknowledgeAlert(Long alertId, Long userId) {
         Alert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new RuntimeException("Alert not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
 
         if (alert.getAcknowledged()) {
-            throw new RuntimeException("Alert is already acknowledged");
+            throw new BadRequestException("Alert is already acknowledged");
         }
 
         alert.setAcknowledged(true);
@@ -71,7 +73,7 @@ public class AlertService {
     @Transactional(readOnly = true)
     public AlertResponse getAlert(Long id) {
         Alert alert = alertRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Alert not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
         return AlertResponse.from(alert);
     }
 
