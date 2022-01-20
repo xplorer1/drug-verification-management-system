@@ -1,69 +1,192 @@
 # Drug Verification Management System
 
-Production-grade backend platform for pharmaceutical supply chain integrity using Java 17 with Spring Boot 3.2+.
+A production-grade backend system for pharmaceutical supply chain integrity using cryptographic serialization and blockchain-based audit logging.
 
-## Overview
+## Features
 
-This system provides comprehensive drug verification and tracking capabilities for the pharmaceutical supply chain, including:
-
-- Secure authentication and authorization with JWT tokens
-- Drug registration and regulatory approval workflow
-- Batch management with chain-of-custody tracking
-- HSM-based cryptographic serialization for unit authenticity
-- Real-time verification with sub-50ms response time
-- Cold chain monitoring with IoT telemetry integration
-- Recall management with stakeholder notifications
-- Counterfeit detection using anomaly detection algorithms
-- Immutable audit logs with blockchain anchoring
+- **Authentication & Authorization**: JWT-based authentication with role-based access control (RBAC)
+- **Drug Registration**: Manufacturer drug registration with regulatory approval workflow
+- **Batch Management**: Track manufacturing batches with expiration dates and quantities
+- **Cryptographic Serialization**: HSM-integrated unit serialization with crypto-tails
+- **Verification Service**: Real-time drug authenticity verification with geolocation
+- **Aggregation**: Hierarchical packaging aggregation (units → cases → pallets)
+- **Recall Management**: Automated recall workflows with batch-level granularity
+- **Telemetry**: IoT sensor integration for temperature monitoring
+- **Alert System**: Real-time alerts for temperature excursions and anomalies
+- **Audit Logging**: Blockchain-based immutable audit trail
+- **OpenAPI Documentation**: Interactive Swagger UI for API exploration
 
 ## Technology Stack
 
-- Java 17 LTS
-- Spring Boot 3.2.2
-- PostgreSQL 16+ with TimescaleDB extension
-- Redis 7+ for caching
-- SoftHSM2 for cryptographic operations
-- Docker and Docker Compose for local development
-- Maven for build management
+- **Framework**: Spring Boot 3.2+
+- **Language**: Java 21
+- **Database**: PostgreSQL 16
+- **Cache**: Redis 7
+- **Security**: JWT (RS256), Argon2id password hashing
+- **Cryptography**: SoftHSM2 for cryptographic operations
+- **Documentation**: OpenAPI 3.0 (Springdoc)
+- **Monitoring**: Micrometer + Prometheus
+- **Build**: Maven 3.9+
 
 ## Prerequisites
 
-- JDK 17 or later
+- Java 21 or higher
 - Docker and Docker Compose
 - Maven 3.9+
+- Git
 
-## Getting Started
+## Quick Start
 
-### 1. Start Infrastructure Services
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd drug-verification-management-system
+```
+
+### 2. Start Infrastructure
 
 ```bash
 docker-compose up -d
 ```
 
 This starts:
-- PostgreSQL with TimescaleDB on port 5432
+- PostgreSQL on port 5432
 - Redis on port 6379
-- SoftHSM2 simulator
+- SoftHSM2 container
 
-### 2. Build the Application
+### 3. Build the Application
 
 ```bash
 mvn clean install
 ```
 
-### 3. Run the Application
+### 4. Run the Application
 
 ```bash
 mvn spring-boot:run
 ```
 
-The application will start on http://localhost:8080
+The application will start on `http://localhost:8080`
 
-### 4. Access Actuator Endpoints
+### 5. Access Swagger UI
 
-- Health: http://localhost:8080/actuator/health
-- Metrics: http://localhost:8080/actuator/metrics
-- Prometheus: http://localhost:8080/actuator/prometheus
+Navigate to: `http://localhost:8080/swagger-ui.html`
+
+## API Documentation
+
+### Authentication
+
+**Login**
+```bash
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "manufacturer",
+  "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "accessToken": "eyJhbGc...",
+  "refreshToken": "eyJhbGc...",
+  "expiresIn": 3600000,
+  "userId": 1,
+  "username": "manufacturer",
+  "role": "MANUFACTURER"
+}
+```
+
+### Drug Registration
+
+```bash
+POST /api/v1/drugs
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Aspirin",
+  "ndc": "12345-678-90",
+  "manufacturer": "PharmaCorp",
+  "manufacturerId": 1,
+  "description": "Pain reliever",
+  "dosageForm": "Tablet",
+  "strength": "500mg"
+}
+```
+
+### Batch Creation
+
+```bash
+POST /api/v1/batches
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "drugId": 1,
+  "batchNumber": "BATCH-001",
+  "manufacturingDate": "2026-01-01",
+  "expirationDate": "2028-01-01",
+  "quantity": 1000
+}
+```
+
+### Unit Verification
+
+```bash
+POST /api/v1/verify
+Content-Type: application/json
+
+{
+  "serialNumber": "SN1234567890",
+  "latitude": 43.65,
+  "longitude": -79.38,
+  "location": "Toronto Pharmacy",
+  "deviceId": "SCANNER-001"
+}
+```
+
+## User Roles
+
+- **MANUFACTURER**: Register drugs, create batches, serialize units
+- **REGULATOR**: Approve/reject drugs, manage recalls
+- **DISTRIBUTOR**: View supply chain data, manage aggregations
+- **PHARMACIST**: Verify units, decommission units
+- **ADMIN**: Full system access
+
+## Configuration
+
+### Application Properties
+
+Key configuration in `src/main/resources/application.yml`:
+
+```yaml
+application:
+  jwt:
+    secret: your-256-bit-secret-key
+    expiration: 3600000  # 1 hour
+    refresh-expiration: 604800000  # 7 days
+  
+  security:
+    max-failed-attempts: 3
+    lockout-duration-minutes: 15
+```
+
+### Environment Variables
+
+For production deployment:
+
+```bash
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/drugverification
+export SPRING_DATASOURCE_USERNAME=postgres
+export SPRING_DATASOURCE_PASSWORD=<secure-password>
+export SPRING_DATA_REDIS_HOST=localhost
+export SPRING_DATA_REDIS_PORT=6379
+export APPLICATION_JWT_SECRET=<256-bit-secret>
+```
 
 ## Testing
 
@@ -73,49 +196,40 @@ The application will start on http://localhost:8080
 mvn test
 ```
 
-### Run Integration Tests
+### Run Specific Test
 
 ```bash
-mvn verify
+mvn test -Dtest=SecurityValidationTest
 ```
 
-## API Documentation
+### Test Coverage
 
-Once the application is running, access the OpenAPI documentation at:
-http://localhost:8080/swagger-ui.html
-
-## Configuration
-
-Application configuration is in `src/main/resources/application.yml`. Key configuration areas:
-
-- Database connection settings
-- Redis cache configuration
-- JWT token settings
-- HSM integration parameters
-- Verification service settings
-
-## Performance Targets
-
-- Verification API: <50ms p95 response time (cached)
-- Verification API: <200ms p95 response time (uncached)
-- Throughput: 1000 requests/second sustained load
-- Code coverage: >80%
+- Unit Tests: 21 tests covering services, controllers, and security
+- Integration Tests: Infrastructure created (requires debugging)
 
 ## Security Features
 
-- TLS 1.3 for all endpoints
-- AES-256 encryption at rest
-- Argon2id password hashing
-- JWT with RS256 signing
-- HSM for cryptographic operations
-- Rate limiting per user and endpoint
-- PII redaction in logs
+- **JWT Authentication**: RS256 algorithm with access and refresh tokens
+- **Password Hashing**: Argon2id with salt
+- **RBAC**: Role-based access control on all endpoints
+- **Secure Headers**: CSP, HSTS, X-Frame-Options
+- **Input Validation**: Bean Validation with size and format constraints
+- **Audit Logging**: Blockchain-based immutable audit trail
+- **Idempotency**: Request deduplication for critical operations
 
-## Compliance
+## Monitoring
 
-- Immutable audit logs with hash chains
-- Blockchain anchoring of audit logs
-- 7-year audit retention
+### Health Check
+
+```bash
+GET /actuator/health
+```
+
+### Metrics (Prometheus)
+
+```bash
+GET /actuator/prometheus
+```
 
 ## Project Structure
 
@@ -124,19 +238,31 @@ src/
 ├── main/
 │   ├── java/com/pharma/drugverification/
 │   │   ├── config/          # Configuration classes
+│   │   ├── controller/      # REST controllers
 │   │   ├── domain/          # JPA entities
-│   │   ├── repository/      # Data access layer
-│   │   ├── service/         # Business logic
-│   │   ├── controller/      # REST endpoints
-│   │   └── security/        # Security configuration
+│   │   ├── dto/             # Data transfer objects
+│   │   ├── exception/       # Custom exceptions
+│   │   ├── repository/      # Spring Data repositories
+│   │   ├── security/        # Security components
+│   │   └── service/         # Business logic
 │   └── resources/
-│       ├── application.yml  # Application configuration
-│       ├── logback-spring.xml  # Logging configuration
-│       └── db/migration/    # Flyway database migrations
+│       └── application.yml  # Application configuration
 └── test/
-    └── java/                # Unit and integration tests
+    └── java/com/pharma/drugverification/
+        ├── config/          # Test configuration
+        ├── controller/      # Controller tests
+        ├── integration/     # Integration tests
+        └── service/         # Service tests
 ```
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
 ## License
 
-Proprietary - All rights reserved
+Apache 2.0
+
+## Support
+
+For issues and questions, please open a GitHub issue.
