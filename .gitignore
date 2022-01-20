@@ -1,9 +1,10 @@
 # Context folder
 context/
 
-# Markdown files (except README)
+# Markdown files (except README and DEPLOYMENT)
 *.md
 !README.md
+!DEPLOYMENT.md
 
 # Maven
 target/
