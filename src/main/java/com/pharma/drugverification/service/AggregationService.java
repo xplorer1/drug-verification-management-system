@@ -50,30 +50,34 @@ public class AggregationService {
         // we need to create a parent unit if using serial number approach
         // For now, create aggregation records for each child
         List<Aggregation> aggregations = new ArrayList<>();
+        Long parentId = Long.parseLong(request.getParentSerialNumber());
 
         for (SerializedUnit child : childUnits) {
             Aggregation aggregation = new Aggregation();
-            aggregation.setParentId(Long.parseLong(request.getParentSerialNumber())); // Simplified - in production
-                                                                                      // would lookup parent
+            aggregation.setParentId(parentId);
             aggregation.setParentType(request.getType());
             aggregation.setChildId(child.getId());
             aggregation.setChildType(Aggregation.AggregationType.UNIT);
             aggregation.setBatchId(child.getBatchId());
             aggregation.setActive(true);
 
-            aggregations.add(aggregationRepository.save(aggregation));
-
-            // Update child unit
-            child.setParentAggregationId(aggregation.getId());
-            serializedUnitRepository.save(child);
+            aggregations.add(aggregation);
         }
 
-        auditService.log("AGGREGATION_CREATED", "Aggregation", aggregations.get(0).getId(), userId,
+        List<Aggregation> savedAggregations = aggregationRepository.saveAll(aggregations);
+
+        // Update child units with aggregation references
+        for (int i = 0; i < childUnits.size(); i++) {
+            childUnits.get(i).setParentAggregationId(savedAggregations.get(i).getId());
+        }
+        serializedUnitRepository.saveAll(childUnits);
+
+        auditService.log("AGGREGATION_CREATED", "Aggregation", savedAggregations.get(0).getId(), userId,
                 Map.of("type", request.getType().name(), "childCount", childUnits.size()));
 
         log.info("Created {} aggregation with {} units", request.getType(), childUnits.size());
 
-        return AggregationResponse.from(aggregations.get(0));
+        return AggregationResponse.from(savedAggregations.get(0));
     }
 
     @Transactional

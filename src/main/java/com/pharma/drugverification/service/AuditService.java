@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -31,6 +32,7 @@ public class AuditService {
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
 
+    @Async
     @Transactional
     public void log(String action, String entityType, Long entityId, Long userId, Map<String, Object> changes) {
         try {

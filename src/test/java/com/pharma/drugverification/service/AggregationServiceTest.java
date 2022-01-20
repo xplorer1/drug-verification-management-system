@@ -67,13 +67,16 @@ class AggregationServiceTest {
     @Test
     void createAggregation_Success() {
         when(serializedUnitRepository.findAllById(any())).thenReturn(List.of(childUnit));
-        when(aggregationRepository.save(any(Aggregation.class))).thenReturn(aggregation);
+        when(aggregationRepository.saveAll(anyList())).thenReturn(List.of(aggregation));
+        when(serializedUnitRepository.saveAll(anyList())).thenReturn(List.of(childUnit));
 
         AggregationResponse response = aggregationService.createAggregation(request, 1L);
 
         assertNotNull(response);
         assertEquals(Aggregation.AggregationType.CASE, response.getType());
         assertEquals("12345", response.getParentSerialNumber());
+        verify(aggregationRepository, times(1)).saveAll(anyList());
+        verify(serializedUnitRepository, times(1)).saveAll(anyList());
         verify(auditService, times(1)).log(eq("AGGREGATION_CREATED"), eq("Aggregation"), any(), eq(1L), any());
     }
 

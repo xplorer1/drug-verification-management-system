@@ -94,22 +94,46 @@ public class SerializationService {
                         throw new BadRequestException("Cannot serialize units for inactive batch");
                 }
 
-                List<SerializedUnitResponse> responses = new ArrayList<>();
+                String expirationDate = batch.getExpirationDate()
+                                .format(DateTimeFormatter.ofPattern("yyMMdd"));
+                int currentKeyVersion = hsmService.getCurrentKeyVersion();
+
+                List<SerializedUnit> units = new ArrayList<>();
 
                 for (int i = 0; i < quantity; i++) {
                         String serialNumber = hsmService.generateSerialNumber();
 
-                        SerializedUnitCreationRequest request = new SerializedUnitCreationRequest();
-                        request.setSerialNumber(serialNumber);
-                        request.setBatchId(batchId);
-                        request.setGtin(gtin);
+                        String cryptoTail = hsmService.generateCryptoTail(
+                                        serialNumber,
+                                        gtin,
+                                        batch.getBatchNumber());
 
-                        SerializedUnitResponse response = createSerializedUnit(request, userId);
-                        responses.add(response);
+                        String dataMatrix = hsmService.generateDataMatrix(
+                                        gtin,
+                                        serialNumber,
+                                        batch.getBatchNumber(),
+                                        expirationDate);
+
+                        SerializedUnit unit = new SerializedUnit();
+                        unit.setSerialNumber(serialNumber);
+                        unit.setBatchId(batchId);
+                        unit.setGtin(gtin);
+                        unit.setCryptoTail(cryptoTail);
+                        unit.setDataMatrix(dataMatrix);
+                        unit.setKeyVersion(currentKeyVersion);
+                        unit.setStatus(SerializedUnit.UnitStatus.ACTIVE);
+
+                        units.add(unit);
                 }
 
-                log.info("Bulk created {} serialized units for batch {}", quantity, batch.getBatchNumber());
-                return responses;
+                List<SerializedUnit> savedUnits = serializedUnitRepository.saveAll(units);
+
+                auditService.log("UNIT_BULK_SERIALIZED", "Batch", batchId, userId,
+                                Map.of("gtin", gtin, "quantity", quantity));
+
+                return savedUnits.stream()
+                                .map(SerializedUnitResponse::from)
+                                .toList();
         }
 
         @Transactional
@@ -197,35 +221,13 @@ public class SerializationService {
 
         @Transactional(readOnly = true)
         public Page<SerializedUnitResponse> getUnitsByBatch(Long batchId, Pageable pageable) {
-                return serializedUnitRepository.findByBatchId(batchId)
-                                .stream()
-                                .map(SerializedUnitResponse::from)
-                                .collect(java.util.stream.Collectors.collectingAndThen(
-                                                java.util.stream.Collectors.toList(),
-                                                list -> new org.springframework.data.domain.PageImpl<>(
-                                                                list.subList(
-                                                                                (int) pageable.getOffset(),
-                                                                                Math.min((int) (pageable.getOffset()
-                                                                                                + pageable.getPageSize()),
-                                                                                                list.size())),
-                                                                pageable,
-                                                                list.size())));
+                return serializedUnitRepository.findByBatchId(batchId, pageable)
+                                .map(SerializedUnitResponse::from);
         }
 
         @Transactional(readOnly = true)
         public Page<SerializedUnitResponse> getUnitsByStatus(SerializedUnit.UnitStatus status, Pageable pageable) {
-                return serializedUnitRepository.findByStatus(status)
-                                .stream()
-                                .map(SerializedUnitResponse::from)
-                                .collect(java.util.stream.Collectors.collectingAndThen(
-                                                java.util.stream.Collectors.toList(),
-                                                list -> new org.springframework.data.domain.PageImpl<>(
-                                                                list.subList(
-                                                                                (int) pageable.getOffset(),
-                                                                                Math.min((int) (pageable.getOffset()
-                                                                                                + pageable.getPageSize()),
-                                                                                                list.size())),
-                                                                pageable,
-                                                                list.size())));
+                return serializedUnitRepository.findByStatus(status, pageable)
+                                .map(SerializedUnitResponse::from);
         }
 }

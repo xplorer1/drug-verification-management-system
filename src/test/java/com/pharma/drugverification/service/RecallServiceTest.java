@@ -87,8 +87,9 @@ class RecallServiceTest {
         when(batchRepository.findById(1L)).thenReturn(Optional.of(batch));
         // Mock exists check to return false (no active recall)
         when(recallRepository.existsByBatchIdAndStatus(eq(1L), any(RecallStatus.class))).thenReturn(false);
-        when(serializedUnitRepository.findByBatchId(1L)).thenReturn(List.of(unit1));
+        when(serializedUnitRepository.countByBatchId(1L)).thenReturn(1L);
         when(recallRepository.save(any(Recall.class))).thenReturn(recall);
+        when(serializedUnitRepository.updateStatusByBatchIdAndStatus(anyLong(), any(), any())).thenReturn(1);
 
         // Act
         RecallResponse response = recallService.initiateRecall(request, 1L);
@@ -97,13 +98,12 @@ class RecallServiceTest {
         assertNotNull(response);
         assertEquals(RecallStatus.ACTIVE, response.getStatus());
 
-        // Verify unit status update using ArgumentCaptor
-        org.mockito.ArgumentCaptor<SerializedUnit> unitCaptor = org.mockito.ArgumentCaptor
-                .forClass(SerializedUnit.class);
-        verify(serializedUnitRepository, times(1)).save(unitCaptor.capture());
-        SerializedUnit capturedUnit = unitCaptor.getValue();
-        assertEquals(101L, capturedUnit.getId());
-        assertEquals(SerializedUnit.UnitStatus.QUARANTINED, capturedUnit.getStatus());
+        // Verify bulk update called instead of individual saves
+        verify(serializedUnitRepository, times(1)).updateStatusByBatchIdAndStatus(
+                eq(1L),
+                eq(SerializedUnit.UnitStatus.ACTIVE),
+                eq(SerializedUnit.UnitStatus.QUARANTINED));
+        verify(serializedUnitRepository, never()).save(any(SerializedUnit.class));
 
         verify(alertService, times(1)).createAlert(eq("RECALL_INITIATED"), eq("High"), any(), eq("Recall"), eq(1L));
         verify(auditService, times(1)).log(eq("RECALL_INITIATED"), eq("Recall"), eq(1L), eq(1L), any());

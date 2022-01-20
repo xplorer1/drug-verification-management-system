@@ -43,28 +43,25 @@ public class RecallService {
         }
 
         // Count affected units
-        List<SerializedUnit> affectedUnits = serializedUnitRepository.findByBatchId(request.getBatchId());
-        int totalAffected = affectedUnits.size();
+        long totalAffected = serializedUnitRepository.countByBatchId(request.getBatchId());
 
         Recall recall = new Recall();
         recall.setBatchId(request.getBatchId());
         recall.setClassification(request.getClassification());
         recall.setStatus(Recall.RecallStatus.ACTIVE);
         recall.setReason(request.getReason());
-        recall.setAffectedUnits(totalAffected);
+        recall.setAffectedUnits((int) totalAffected);
         recall.setRecoveredUnits(0);
         recall.setEffectiveness(0.0);
         recall.setInitiatedByUserId(regulatorId);
 
         Recall saved = recallRepository.save(recall);
 
-        // Quarantine all active units in the batch
-        for (SerializedUnit unit : affectedUnits) {
-            if (unit.getStatus() == SerializedUnit.UnitStatus.ACTIVE) {
-                unit.setStatus(SerializedUnit.UnitStatus.QUARANTINED);
-                serializedUnitRepository.save(unit);
-            }
-        }
+        // Quarantine all active units in the batch using bulk update
+        int quarantinedCount = serializedUnitRepository.updateStatusByBatchIdAndStatus(
+                request.getBatchId(),
+                SerializedUnit.UnitStatus.ACTIVE,
+                SerializedUnit.UnitStatus.QUARANTINED);
 
         // Create high-priority alert
         alertService.createAlert(
@@ -76,9 +73,10 @@ public class RecallService {
 
         auditService.log("RECALL_INITIATED", "Recall", saved.getId(), regulatorId,
                 Map.of("batchId", request.getBatchId(), "classification", request.getClassification().name(),
-                        "totalAffected", totalAffected));
+                        "totalAffected", totalAffected, "quarantinedCount", quarantinedCount));
 
-        log.warn("Recall initiated for batch {} with {} units affected", batch.getBatchNumber(), totalAffected);
+        log.warn("Recall initiated for batch {} with {} units affected ({} quarantined)",
+                batch.getBatchNumber(), totalAffected, quarantinedCount);
 
         return RecallResponse.from(saved);
     }
