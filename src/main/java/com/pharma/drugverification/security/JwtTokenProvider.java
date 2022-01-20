@@ -23,6 +23,10 @@ public class JwtTokenProvider {
 
     private SecretKey getSigningKey() {
         String secret = applicationProperties.getJwt().getSecret();
+        if (secret == null || secret.isBlank()) {
+            log.error("JWT secret is not configured in application properties!");
+            throw new IllegalStateException("JWT secret is missing");
+        }
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 

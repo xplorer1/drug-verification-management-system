@@ -32,10 +32,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
+        String authHeader = request.getHeader("Authorization");
+        log.info("JwtFilter: request={} {}, authHeader={}", request.getMethod(), request.getRequestURI(),
+                authHeader != null ? "present" : "missing");
         try {
             String token = getTokenFromRequest(request);
+            log.info("Extracted token: {}", token != null ? "present" : "absent");
 
             if (token != null && jwtTokenProvider.validateToken(token)) {
+                log.info("Token validation successful");
                 if (authenticationService.isTokenBlacklisted(token)) {
                     log.warn("Blocked blacklisted token");
                     filterChain.doFilter(request, response);
@@ -45,6 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtTokenProvider.getUsernameFromToken(token);
                 Long userId = jwtTokenProvider.getUserIdFromToken(token);
                 String role = jwtTokenProvider.getRoleFromToken(token);
+                log.info("Authenticated user: {}, id: {}, role: {}", username, userId, role);
 
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username,
@@ -57,6 +63,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 request.setAttribute("userId", userId);
                 request.setAttribute("username", username);
                 request.setAttribute("role", role);
+                log.info("SecurityContext updated with ROLE_{}", role);
+            } else {
+                log.warn("Token validation failed or token is null");
             }
         } catch (Exception e) {
             log.error("Cannot set user authentication", e);

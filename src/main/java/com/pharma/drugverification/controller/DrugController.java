@@ -5,6 +5,8 @@ import com.pharma.drugverification.dto.DrugApprovalRequest;
 import com.pharma.drugverification.dto.DrugRegistrationRequest;
 import com.pharma.drugverification.dto.DrugResponse;
 import com.pharma.drugverification.service.DrugService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,12 +19,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/drugs")
 @RequiredArgsConstructor
+@Tag(name = "Drugs", description = "Endpoints for drug registration, approval, and lookup")
 public class DrugController {
 
     private final DrugService drugService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('MANUFACTURER', 'ADMIN')")
+    @Operation(summary = "Register a new drug", description = "Allows manufacturers to register a new drug for the supply chain")
     public ResponseEntity<DrugResponse> registerDrug(
             @Valid @RequestBody DrugRegistrationRequest request,
             @RequestAttribute("userId") Long userId) {
@@ -32,6 +36,7 @@ public class DrugController {
 
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('REGULATOR', 'ADMIN')")
+    @Operation(summary = "Approve a drug", description = "Allows regulators to approve a registered drug")
     public ResponseEntity<DrugResponse> approveDrug(
             @PathVariable Long id,
             @RequestAttribute("userId") Long regulatorId) {
@@ -50,6 +55,7 @@ public class DrugController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get drug by ID", description = "Retrieves drug details by its internal database ID")
     public ResponseEntity<DrugResponse> getDrugById(@PathVariable Long id) {
         DrugResponse response = drugService.getDrugById(id);
         return ResponseEntity.ok(response);
@@ -62,6 +68,7 @@ public class DrugController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all drugs", description = "Retrieves a paginated list of all drugs")
     public ResponseEntity<Page<DrugResponse>> getAllDrugs(Pageable pageable) {
         Page<DrugResponse> response = drugService.getAllDrugs(pageable);
         return ResponseEntity.ok(response);

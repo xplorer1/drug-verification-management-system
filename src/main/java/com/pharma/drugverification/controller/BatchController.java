@@ -5,6 +5,8 @@ import com.pharma.drugverification.dto.BatchCreationRequest;
 import com.pharma.drugverification.dto.BatchResponse;
 import com.pharma.drugverification.dto.BatchUpdateRequest;
 import com.pharma.drugverification.service.BatchService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,12 +19,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/batches")
 @RequiredArgsConstructor
+@Tag(name = "Batches", description = "Endpoints for batch creation, status management, and tracking")
 public class BatchController {
 
     private final BatchService batchService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('MANUFACTURER', 'ADMIN')")
+    @Operation(summary = "Create a new batch", description = "Allows manufacturers to initialize a new manufacturing batch")
     public ResponseEntity<BatchResponse> createBatch(
             @Valid @RequestBody BatchCreationRequest request,
             @RequestAttribute("userId") Long userId) {
@@ -42,6 +46,7 @@ public class BatchController {
 
     @PutMapping("/{id}/status/{status}")
     @PreAuthorize("hasAnyRole('MANUFACTURER', 'DISTRIBUTOR', 'REGULATOR', 'ADMIN')")
+    @Operation(summary = "Update batch status", description = "Promotes batch through lifecycle (MANUFACTURED -> RELEASED -> etc.)")
     public ResponseEntity<BatchResponse> updateBatchStatus(
             @PathVariable Long id,
             @PathVariable Batch.BatchStatus status,
@@ -52,6 +57,7 @@ public class BatchController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get batch by ID", description = "Retrieves batch details and status by its internal ID")
     public ResponseEntity<BatchResponse> getBatchById(@PathVariable Long id) {
         BatchResponse response = batchService.getBatchById(id);
         return ResponseEntity.ok(response);
